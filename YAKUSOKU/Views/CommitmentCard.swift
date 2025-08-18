@@ -8,6 +8,7 @@ struct CommitmentCard: View {
     
     @State private var todayCheckin: Checkin?
     @State private var showingIfThen = false
+    @State private var todayScore: Score = .meh
     
     private var todayKey: String {
         Date().yakusokuDayKey
@@ -28,10 +29,12 @@ struct CommitmentCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
+            // 약속 제목
             VStack(alignment: .leading, spacing: 8) {
                 Text(commitment.title)
-                    .font(.headline)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(YKColor.ink)
                     .lineLimit(2)
                 
                 if let ifThen = commitment.ifThen, !ifThen.isEmpty {
@@ -44,77 +47,57 @@ struct CommitmentCard: View {
                             Image(systemName: showingIfThen ? "chevron.up.circle" : "chevron.down.circle")
                                 .font(.caption)
                             Text("If-Then 전략")
-                                .font(.caption)
+                                .font(.caption.weight(.medium))
                         }
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(YKColor.secondaryText)
                     }
                     
                     if showingIfThen {
                         Text(ifThen)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 14)
-                            .background(
-                                LinearGradient(
-                                    colors: [ZenColors.tertiaryGreen.opacity(0.3), ZenColors.tertiaryGreen.opacity(0.1)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+                            .foregroundStyle(YKColor.secondaryText)
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(YKColor.mint.opacity(0.3))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(YKColor.ink.opacity(0.1), lineWidth: 1)
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                 }
             }
             
+            // 7일 인디케이터와 체크인 버튼
             HStack(spacing: 12) {
                 SevenDayIndicator(checkins: recentCheckins)
                 
                 Spacer()
                 
-                HStack(spacing: 8) {
-                    ForEach(Rating.allCases, id: \.self) { rating in
-                        CheckinButton(
-                            rating: rating,
-                            isSelected: todayRating == rating,
-                            commitment: commitment
-                        )
-                    }
+                // TrafficScorePicker로 교체
+                if let rating = todayRating {
+                    TrafficScorePicker(selection: .init(
+                        get: { Score(from: rating) },
+                        set: { newScore in
+                            performCheckin(rating: newScore.toRating)
+                        }
+                    ))
+                    .frame(width: 180)
+                } else {
+                    TrafficScorePicker(selection: .init(
+                        get: { .meh },
+                        set: { newScore in
+                            performCheckin(rating: newScore.toRating)
+                        }
+                    ))
+                    .frame(width: 180)
                 }
             }
         }
-        .zenCard()
-    }
-}
-
-struct CheckinButton: View {
-    let rating: Rating
-    let isSelected: Bool
-    let commitment: Commitment
-    @Environment(\.modelContext) private var modelContext
-    
-    var body: some View {
-        Button {
-            performCheckin()
-            HapticFeedback.light()
-        } label: {
-            VStack(spacing: 6) {
-                // 플랫 디자인 이모지 사용 (선택 시 색상 변경)
-                FluentEmoji(rating: rating, size: 32, isSelected: isSelected)
-                    .scaleEffect(isSelected ? 1.12 : 1.0)
-                
-                // 텍스트 라벨
-                Text(rating.label)
-                    .font(.caption2)
-                    .fontWeight(isSelected ? .bold : .medium)
-                    .foregroundStyle(isSelected ? .white : colorForRating(rating))
-            }
-            .frame(width: 56, height: 60)
-        }
-        .zenButton(isSelected: isSelected, selectionColor: colorForRating(rating))
+        .stickerCard()
     }
     
-    private func performCheckin() {
+    private func performCheckin(rating: Rating) {
         let dayKey = Date().yakusokuDayKey
         
         let commitmentID = commitment.id
@@ -137,17 +120,7 @@ struct CheckinButton: View {
         }
         
         try? modelContext.save()
-    }
-    
-    private func colorForRating(_ rating: Rating) -> Color {
-        switch rating {
-        case .good:
-            return ZenColors.goodColor
-        case .meh:
-            return ZenColors.mehColor
-        case .poor:
-            return ZenColors.poorColor
-        }
+        HapticFeedback.success()
     }
 }
 
@@ -161,16 +134,20 @@ struct SevenDayIndicator: View {
     }
     
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             ForEach(0..<7) { day in
-                VStack(spacing: 2) {
+                VStack(spacing: 4) {
                     Circle()
                         .fill(colorForRating(ratingForDay(day)))
                         .frame(width: 8, height: 8)
+                        .overlay(
+                            Circle()
+                                .stroke(YKColor.ink.opacity(0.4), lineWidth: 1)
+                        )
                     
                     Text(dayLabel(day))
                         .font(.system(size: 8))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(YKColor.ink.opacity(0.6))
                 }
             }
         }
@@ -186,14 +163,10 @@ struct SevenDayIndicator: View {
     
     private func colorForRating(_ rating: Rating?) -> Color {
         switch rating {
-        case .good:
-            return ZenColors.goodColor
-        case .meh:
-            return ZenColors.mehColor
-        case .poor:
-            return ZenColors.poorColor
-        case nil:
-            return ZenColors.tertiaryText.opacity(0.2)
+        case .good: return YKColor.green
+        case .meh: return YKColor.yellow
+        case .poor: return YKColor.red
+        case nil: return YKColor.card
         }
     }
 }
