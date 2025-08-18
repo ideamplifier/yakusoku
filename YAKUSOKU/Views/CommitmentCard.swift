@@ -98,19 +98,19 @@ struct CheckinButton: View {
             performCheckin()
             HapticFeedback.light()
         } label: {
-            VStack(spacing: 4) {
-                // 플랫 디자인 이모지 사용
-                FluentEmoji(rating: rating, size: 28)
+            VStack(spacing: 6) {
+                // 플랫 디자인 이모지 사용 (색상 배경)
+                FluentEmoji(rating: rating, size: 32)
                     .scaleEffect(isSelected ? 1.15 : 1.0)
-                    .opacity(isSelected ? 1.0 : 0.7)
+                    .opacity(isSelected ? 1.0 : 0.6)
                 
-                if isSelected {
-                    Circle()
-                        .fill(colorForRating(rating))
-                        .frame(width: 5, height: 5)
-                }
+                // 텍스트 라벨
+                Text(rating.label)
+                    .font(.caption2)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundStyle(isSelected ? colorForRating(rating) : ZenColors.secondaryText)
             }
-            .frame(width: 52, height: 52)
+            .frame(width: 56, height: 60)
         }
         .zenButton(isSelected: isSelected, selectionColor: colorForRating(rating))
     }
