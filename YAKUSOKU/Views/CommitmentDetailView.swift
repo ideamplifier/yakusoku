@@ -225,10 +225,10 @@ struct DailyScore: Identifiable {
     
     var color: Color {
         switch rating {
-        case .good: return .green
-        case .meh: return .orange
-        case .poor: return .red
-        case nil: return .secondary.opacity(0.2)
+        case .good: return ZenColors.goodColor
+        case .meh: return ZenColors.mehColor
+        case .poor: return ZenColors.poorColor
+        case nil: return ZenColors.tertiaryText.opacity(0.2)
         }
     }
 }

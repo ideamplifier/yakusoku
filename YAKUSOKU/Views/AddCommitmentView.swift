@@ -124,8 +124,10 @@ struct AddCommitmentView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("저장") {
                         saveCommitment()
+                        HapticFeedback.success()
                     }
                     .fontWeight(.semibold)
+                    .foregroundStyle(canSave ? ZenColors.primaryGreen : Color.gray)
                     .disabled(!canSave)
                 }
             }

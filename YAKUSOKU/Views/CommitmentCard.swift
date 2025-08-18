@@ -28,7 +28,7 @@ struct CommitmentCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
                 Text(commitment.title)
                     .font(.headline)
@@ -53,10 +53,16 @@ struct CommitmentCard: View {
                         Text(ifThen)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 12)
-                            .background(Color.secondary.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 14)
+                            .background(
+                                LinearGradient(
+                                    colors: [ZenColors.tertiaryGreen.opacity(0.3), ZenColors.tertiaryGreen.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                 }
             }
@@ -77,10 +83,7 @@ struct CommitmentCard: View {
                 }
             }
         }
-        .padding(20)
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
+        .zenCard()
     }
 }
 
@@ -93,21 +96,22 @@ struct CheckinButton: View {
     var body: some View {
         Button {
             performCheckin()
+            HapticFeedback.light()
         } label: {
             VStack(spacing: 4) {
                 Text(rating.emoji)
                     .font(.title2)
+                    .scaleEffect(isSelected ? 1.1 : 1.0)
                 
                 if isSelected {
                     Circle()
-                        .fill(.tint)
-                        .frame(width: 4, height: 4)
+                        .fill(colorForRating(rating))
+                        .frame(width: 5, height: 5)
                 }
             }
-            .frame(width: 44, height: 44)
-            .background(isSelected ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(width: 48, height: 48)
         }
+        .zenButton(isSelected: isSelected, selectionColor: colorForRating(rating))
     }
     
     private func performCheckin() {
@@ -133,6 +137,17 @@ struct CheckinButton: View {
         }
         
         try? modelContext.save()
+    }
+    
+    private func colorForRating(_ rating: Rating) -> Color {
+        switch rating {
+        case .good:
+            return ZenColors.goodColor
+        case .meh:
+            return ZenColors.mehColor
+        case .poor:
+            return ZenColors.poorColor
+        }
     }
 }
 
@@ -172,13 +187,13 @@ struct SevenDayIndicator: View {
     private func colorForRating(_ rating: Rating?) -> Color {
         switch rating {
         case .good:
-            return .green
+            return ZenColors.goodColor
         case .meh:
-            return .orange
+            return ZenColors.mehColor
         case .poor:
-            return .red
+            return ZenColors.poorColor
         case nil:
-            return .secondary.opacity(0.2)
+            return ZenColors.tertiaryText.opacity(0.2)
         }
     }
 }

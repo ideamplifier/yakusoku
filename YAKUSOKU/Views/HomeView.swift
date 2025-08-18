@@ -21,8 +21,12 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(UIColor.systemGroupedBackground)
-                    .ignoresSafeArea()
+                LinearGradient(
+                    colors: [ZenColors.background, ZenColors.secondaryBackground.opacity(0.3)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
                 
                 if commitments.isEmpty {
                     EmptyStateView(showingAddCommitment: $showingAddCommitment)
@@ -89,32 +93,42 @@ struct HomeView: View {
 
 struct EmptyStateView: View {
     @Binding var showingAddCommitment: Bool
+    @State private var animateIcon = false
     
     var body: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "star.circle")
+        VStack(spacing: 28) {
+            Image(systemName: "leaf.circle")
                 .font(.system(size: 80))
-                .foregroundStyle(.tint)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [ZenColors.primaryGreen, ZenColors.secondaryGreen],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .scaleEffect(animateIcon ? 1.05 : 1.0)
+                .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: animateIcon)
+                .onAppear { animateIcon = true }
             
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 Text("작은 약속이 하루를 바꿔요")
                     .font(.title2)
                     .fontWeight(.semibold)
+                    .foregroundStyle(ZenColors.primaryText)
                 
                 Text("첫 번째 약속을 만들어보세요")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ZenColors.secondaryText)
             }
             
             Button {
                 showingAddCommitment = true
+                HapticFeedback.medium()
             } label: {
                 Label("약속 만들기", systemImage: "plus.circle.fill")
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(.tint)
-                    .foregroundStyle(.white)
-                    .clipShape(Capsule())
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 14)
             }
+            .zenFloatingButton()
         }
     }
 }
