@@ -21,14 +21,6 @@ enum Rating: Int, Codable, CaseIterable {
         case .good: return "잘함"
         }
     }
-    
-    var iconName: String {
-        switch self {
-        case .poor: return "xmark"
-        case .meh: return "minus"
-        case .good: return "checkmark"
-        }
-    }
 }
 
 @Model
