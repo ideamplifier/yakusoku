@@ -43,7 +43,7 @@ struct WeeklyReportView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
             }
-            .background(ZenColors.background)
+            .background(YKColor.cream)
             .navigationTitle("주간 리포트")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -52,7 +52,7 @@ struct WeeklyReportView: View {
                         dismiss()
                     }
                     .fontWeight(.semibold)
-                    .foregroundStyle(ZenColors.primaryGreen)
+                    .foregroundStyle(YKColor.green)
                 }
             }
         }
@@ -123,7 +123,7 @@ struct WeekSelector: View {
             } label: {
                 Image(systemName: "chevron.left.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(selectedWeek >= 4 ? ZenColors.tertiaryText : ZenColors.primaryGreen)
+                    .foregroundStyle(selectedWeek >= 4 ? YKColor.tertiaryText : YKColor.green)
             }
             .disabled(selectedWeek >= 4)
             
@@ -132,10 +132,10 @@ struct WeekSelector: View {
             VStack(spacing: 4) {
                 Text(selectedWeek == 0 ? "이번 주" : "\(selectedWeek)주 전")
                     .font(.headline)
-                    .foregroundStyle(ZenColors.primaryText)
+                    .foregroundStyle(YKColor.primaryText)
                 Text(weekRangeText)
                     .font(.caption)
-                    .foregroundStyle(ZenColors.secondaryText)
+                    .foregroundStyle(YKColor.secondaryText)
             }
             
             Spacer()
@@ -146,11 +146,11 @@ struct WeekSelector: View {
             } label: {
                 Image(systemName: "chevron.right.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(selectedWeek <= 0 ? ZenColors.tertiaryText : ZenColors.primaryGreen)
+                    .foregroundStyle(selectedWeek <= 0 ? YKColor.tertiaryText : YKColor.green)
             }
             .disabled(selectedWeek <= 0)
         }
-        .zenCard()
+        .stickerCard()
     }
 }
 
@@ -163,21 +163,15 @@ struct OverallScoreCard: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("전체 달성률")
                         .font(.caption)
-                        .foregroundStyle(ZenColors.secondaryText)
+                        .foregroundStyle(YKColor.secondaryText)
                     
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text("\(Int(stats.successRate * 100))")
                             .font(.system(size: 48, weight: .bold, design: .rounded))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [ZenColors.primaryGreen, ZenColors.secondaryGreen],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .foregroundStyle(YKColor.green)
                         Text("%")
                             .font(.title2)
-                            .foregroundStyle(ZenColors.secondaryText)
+                            .foregroundStyle(YKColor.secondaryText)
                     }
                 }
                 
@@ -192,10 +186,10 @@ struct OverallScoreCard: View {
             
             ProgressView(value: stats.successRate)
                 .progressViewStyle(LinearProgressViewStyle())
-                .tint(ZenColors.primaryGreen)
+                .tint(YKColor.green)
                 .scaleEffect(y: 2)
         }
-        .zenCard()
+        .stickerCard()
     }
 }
 
@@ -205,9 +199,9 @@ struct StatBadge: View {
     
     private var color: Color {
         switch rating {
-        case .good: return ZenColors.goodColor
-        case .meh: return ZenColors.mehColor
-        case .poor: return ZenColors.poorColor
+        case .good: return YKColor.green
+        case .meh: return YKColor.yellow
+        case .poor: return YKColor.red
         }
     }
     
@@ -249,7 +243,7 @@ struct CommitmentWeeklyCard: View {
                         Text(date.weekdayString)
                             .font(.caption2)
                             .fontWeight(.medium)
-                            .foregroundStyle(ZenColors.secondaryText)
+                            .foregroundStyle(YKColor.secondaryText)
                         
                         if let rating = ratingForDate(date) {
                             FluentEmoji(rating: rating, size: 28, isSelected: true)
@@ -259,21 +253,21 @@ struct CommitmentWeeklyCard: View {
                                 .clipShape(Circle())
                         } else {
                             Circle()
-                                .stroke(ZenColors.tertiaryText.opacity(0.2), lineWidth: 2)
+                                .stroke(YKColor.tertiaryText, lineWidth: 1.5)
                                 .frame(width: 36, height: 36)
                         }
                     }
                 }
             }
         }
-        .zenCard()
+        .stickerCard()
     }
     
     private func colorForRating(_ rating: Rating) -> Color {
         switch rating {
-        case .good: return ZenColors.goodColor
-        case .meh: return ZenColors.mehColor
-        case .poor: return ZenColors.poorColor
+        case .good: return YKColor.green
+        case .meh: return YKColor.yellow
+        case .poor: return YKColor.red
         }
     }
 }
@@ -318,18 +312,7 @@ struct InsightCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(
-            LinearGradient(
-                colors: [ZenColors.primaryGreen.opacity(0.1), ZenColors.secondaryGreen.opacity(0.05)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(ZenColors.primaryGreen.opacity(0.2), lineWidth: 1)
-        )
+        .stickerCard()
     }
 }
 

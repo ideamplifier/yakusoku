@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Retro Color Tokens
+// MARK: - Color Tokens
 struct YKColor {
     static let ink = Color(hex: "#1E1E1E")
     static let cream = Color(hex: "#FFF8EF")
@@ -10,8 +10,8 @@ struct YKColor {
     static let card = Color.white
     
     // Support tints
-    static let peach = Color(hex: "FFD9C7")
-    static let mint = Color(hex: "D6F4E6")
+    static let peach = Color(hex: "#FFD9C7")
+    static let mint = Color(hex: "#D6F4E6")
     
     // Text colors
     static let primaryText = ink
@@ -33,7 +33,7 @@ struct StickerCard: ViewModifier {
                     .stroke(YKColor.ink, lineWidth: 1.5)
             )
             .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
-            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2) // 톤 다운된 그림자
+            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -87,7 +87,7 @@ extension View {
     }
 }
 
-// MARK: - TrafficScorePicker (못함/보통/잘함)
+// MARK: - Score enum for picker
 enum Score: String, CaseIterable, Identifiable {
     case poor = "못함"
     case meh = "보통"
@@ -121,6 +121,7 @@ enum Score: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - TrafficScorePicker (v1 spec)
 struct TrafficScorePicker: View {
     @Binding var selection: Score
     
@@ -139,96 +140,50 @@ struct TrafficScorePicker: View {
                     switch selection {
                     case .poor: return 0
                     case .meh: return w
-                    case .good: return 2 * w
+                    case .good: return w * 2
                     }
                 }()
                 
-                RoundedRectangle(cornerRadius: h/2 - 3, style: .continuous)
+                Capsule()
                     .fill(selection.color)
-                    .frame(width: w - 6, height: h - 6)
-                    .offset(x: x + 3, y: 3)
-                    .animation(.spring(response: 0.22, dampingFraction: 0.9), value: selection)
+                    .frame(width: w, height: h)
+                    .offset(x: x)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selection)
             }
             
             // 라벨과 구분선
             HStack(spacing: 0) {
                 segmentLabel("못함", score: .poor)
                 
-                Rectangle()
-                    .fill(YKColor.ink.opacity(0.15))
-                    .frame(width: 1)
-                    .padding(.vertical, 8)
+                Divider()
+                    .frame(width: 0.75)
+                    .opacity(0.15)
                 
                 segmentLabel("보통", score: .meh)
                 
-                Rectangle()
-                    .fill(YKColor.ink.opacity(0.15))
-                    .frame(width: 1)
-                    .padding(.vertical, 8)
+                Divider()
+                    .frame(width: 0.75)
+                    .opacity(0.15)
                 
                 segmentLabel("잘함", score: .good)
             }
         }
-        .frame(height: 48)
+        .frame(height: 52)
     }
     
     private func segmentLabel(_ text: String, score: Score) -> some View {
         Text(text)
             .font(.subheadline.weight(.semibold))
+            .kerning(0.2)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .foregroundStyle(selection == score ? .white : YKColor.ink)
             .contentShape(Rectangle())
             .onTapGesture {
-                withAnimation(.spring(response: 0.22, dampingFraction: 0.9)) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     selection = score
                     HapticFeedback.light()
                 }
             }
-    }
-}
-
-// MARK: - Simple Face Component
-struct SimpleFace: View {
-    let score: Score
-    let isSelected: Bool
-    
-    var body: some View {
-        ZStack {
-            // 눈
-            HStack(spacing: 8) {
-                Circle()
-                    .frame(width: 4, height: 4)
-                Circle()
-                    .frame(width: 4, height: 4)
-            }
-            .offset(y: -4)
-            
-            // 입
-            Path { path in
-                switch score {
-                case .poor:
-                    // 슬픈 입
-                    path.move(to: CGPoint(x: 8, y: 8))
-                    path.addQuadCurve(
-                        to: CGPoint(x: 24, y: 8),
-                        control: CGPoint(x: 16, y: 14)
-                    )
-                case .meh:
-                    // 일자 입
-                    path.move(to: CGPoint(x: 10, y: 10))
-                    path.addLine(to: CGPoint(x: 22, y: 10))
-                case .good:
-                    // 웃는 입
-                    path.move(to: CGPoint(x: 8, y: 6))
-                    path.addQuadCurve(
-                        to: CGPoint(x: 24, y: 6),
-                        control: CGPoint(x: 16, y: 14)
-                    )
-                }
-            }
-            .stroke(isSelected ? Color.white : YKColor.ink, lineWidth: 2)
-        }
-        .foregroundStyle(isSelected ? .white : YKColor.ink)
     }
 }
 

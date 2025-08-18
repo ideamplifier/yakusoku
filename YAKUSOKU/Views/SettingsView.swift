@@ -19,10 +19,10 @@ struct SettingsView: View {
     }
     
     let themes = [
-        ("creamGreen", "크림 그린", ZenColors.primaryGreen),
-        ("softBlue", "소프트 블루", Color.blue),
-        ("warmPink", "웜 핑크", Color.pink),
-        ("mintGreen", "민트 그린", Color.mint)
+        ("retro", "레트로", YKColor.green),
+        ("creamGreen", "크림 그린", YKColor.green),
+        ("warmRed", "웜 레드", YKColor.red),
+        ("sunnyYellow", "써니 옐로우", YKColor.yellow)
     ]
     
     var body: some View {
@@ -33,24 +33,24 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("알림 설정")
                             .font(.headline)
-                            .foregroundStyle(ZenColors.primaryText)
+                            .foregroundStyle(YKColor.primaryText)
                         
                         VStack(spacing: 16) {
                             HStack {
                                 Label("알림 받기", systemImage: "bell.fill")
-                                    .foregroundStyle(ZenColors.primaryGreen)
+                                    .foregroundStyle(YKColor.green)
                                 
                                 Spacer()
                                 
                                 Toggle("", isOn: $enableNotifications)
                                     .labelsHidden()
-                                    .tint(ZenColors.primaryGreen)
+                                    .tint(YKColor.green)
                             }
                             
                             if enableNotifications {
                                 HStack {
                                     Label("알림 시간", systemImage: "clock.fill")
-                                        .foregroundStyle(ZenColors.secondaryGreen)
+                                        .foregroundStyle(YKColor.green.opacity(0.7))
                                     
                                     Spacer()
                                     
@@ -60,26 +60,26 @@ struct SettingsView: View {
                                         }
                                     }
                                     .pickerStyle(.menu)
-                                    .tint(ZenColors.primaryGreen)
+                                    .tint(YKColor.green)
                                 }
                                 .padding(.vertical, 8)
                                 .padding(.horizontal, 12)
-                                .background(ZenColors.tertiaryGreen.opacity(0.1))
+                                .background(YKColor.mint.opacity(0.2))
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             }
                         }
                         
                         Text("매일 설정한 시간에 약속을 상기시켜드려요")
                             .font(.caption)
-                            .foregroundStyle(ZenColors.secondaryText)
+                            .foregroundStyle(YKColor.secondaryText)
                     }
-                    .zenCard()
+                    .stickerCard()
                     
                     // 테마 설정
                     VStack(alignment: .leading, spacing: 16) {
                         Text("테마")
                             .font(.headline)
-                            .foregroundStyle(ZenColors.primaryText)
+                            .foregroundStyle(YKColor.primaryText)
                         
                         VStack(spacing: 12) {
                             ForEach(themes, id: \.0) { theme in
@@ -95,19 +95,19 @@ struct SettingsView: View {
                                     
                                     Text(theme.1)
                                         .font(.subheadline)
-                                        .foregroundStyle(ZenColors.primaryText)
+                                        .foregroundStyle(YKColor.primaryText)
                                     
                                     Spacer()
                                     
                                     if selectedTheme == theme.0 {
                                         Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(ZenColors.primaryGreen)
+                                            .foregroundStyle(YKColor.green)
                                     }
                                 }
                                 .padding(12)
                                 .background(
                                     selectedTheme == theme.0 
-                                    ? ZenColors.tertiaryGreen.opacity(0.15) 
+                                    ? YKColor.mint.opacity(0.15) 
                                     : Color.clear
                                 )
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -115,7 +115,7 @@ struct SettingsView: View {
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .stroke(
                                             selectedTheme == theme.0 
-                                            ? ZenColors.primaryGreen.opacity(0.3) 
+                                            ? YKColor.green.opacity(0.3) 
                                             : Color.clear, 
                                             lineWidth: 1
                                         )
@@ -129,17 +129,17 @@ struct SettingsView: View {
                             }
                         }
                     }
-                    .zenCard()
+                    .stickerCard()
                     
                     // 데이터 설정
                     VStack(alignment: .leading, spacing: 16) {
                         Text("데이터")
                             .font(.headline)
-                            .foregroundStyle(ZenColors.primaryText)
+                            .foregroundStyle(YKColor.primaryText)
                         
                         HStack {
                             Label("iCloud 동기화", systemImage: "icloud.fill")
-                                .foregroundStyle(ZenColors.primaryGreen)
+                                .foregroundStyle(YKColor.green)
                             
                             Spacer()
                             
@@ -150,7 +150,7 @@ struct SettingsView: View {
                         
                         Text("여러 기기에서 데이터를 동기화합니다")
                             .font(.caption)
-                            .foregroundStyle(ZenColors.secondaryText)
+                            .foregroundStyle(YKColor.secondaryText)
                         
                         Divider()
                             .padding(.vertical, 8)
@@ -160,36 +160,36 @@ struct SettingsView: View {
                             HapticFeedback.warning()
                         } label: {
                             Label("모든 데이터 초기화", systemImage: "trash.fill")
-                                .foregroundStyle(ZenColors.poorColor)
+                                .foregroundStyle(YKColor.red)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(12)
-                                .background(ZenColors.poorColor.opacity(0.05))
+                                .background(YKColor.red.opacity(0.08))
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(ZenColors.poorColor.opacity(0.2), lineWidth: 1)
+                                        .stroke(YKColor.red.opacity(0.3), lineWidth: 1.5)
                                 )
                         }
                         
                         Text("모든 약속과 기록이 삭제됩니다. 이 작업은 취소할 수 없습니다.")
                             .font(.caption)
-                            .foregroundStyle(ZenColors.poorColor.opacity(0.7))
+                            .foregroundStyle(YKColor.red.opacity(0.7))
                     }
-                    .zenCard()
+                    .stickerCard()
                     
                     // 정보
                     VStack(alignment: .leading, spacing: 16) {
                         Text("정보")
                             .font(.headline)
-                            .foregroundStyle(ZenColors.primaryText)
+                            .foregroundStyle(YKColor.primaryText)
                         
                         VStack(spacing: 12) {
                             HStack {
                                 Text("버전")
-                                    .foregroundStyle(ZenColors.primaryText)
+                                    .foregroundStyle(YKColor.primaryText)
                                 Spacer()
                                 Text("1.0.0")
-                                    .foregroundStyle(ZenColors.secondaryText)
+                                    .foregroundStyle(YKColor.secondaryText)
                             }
                             .padding(.vertical, 8)
                             
@@ -198,24 +198,24 @@ struct SettingsView: View {
                             Link(destination: URL(string: "https://github.com/yakusoku")!) {
                                 HStack {
                                     Label("GitHub", systemImage: "link")
-                                        .foregroundStyle(ZenColors.primaryGreen)
+                                        .foregroundStyle(YKColor.green)
                                     Spacer()
                                     Image(systemName: "arrow.up.right")
                                         .font(.caption)
-                                        .foregroundStyle(ZenColors.secondaryGreen)
+                                        .foregroundStyle(YKColor.green.opacity(0.7))
                                 }
                                 .padding(.vertical, 8)
                             }
                         }
                     }
-                    .zenCard()
+                    .stickerCard()
                     
                     Spacer(minLength: 30)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
             }
-            .background(ZenColors.background)
+            .background(YKColor.cream)
             .navigationTitle("설정")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -224,7 +224,7 @@ struct SettingsView: View {
                         dismiss()
                     }
                     .fontWeight(.semibold)
-                    .foregroundStyle(ZenColors.primaryGreen)
+                    .foregroundStyle(YKColor.green)
                 }
             }
             .alert("모든 데이터 초기화", isPresented: $showingResetAlert) {
