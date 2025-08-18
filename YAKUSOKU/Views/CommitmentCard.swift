@@ -98,21 +98,29 @@ struct CheckinButton: View {
             performCheckin()
             HapticFeedback.light()
         } label: {
-            VStack(spacing: 4) {
-                // 플랫 디자인 이모지 사용
-                FluentEmoji(rating: rating, size: 28)
-                    .scaleEffect(isSelected ? 1.15 : 1.0)
-                    .opacity(isSelected ? 1.0 : 0.7)
-                
-                if isSelected {
+            VStack(spacing: 3) {
+                // Color Block System - 색상 배경 + 흰색 아이콘
+                ZStack {
                     Circle()
-                        .fill(colorForRating(rating))
-                        .frame(width: 5, height: 5)
+                        .fill(isSelected ? colorForRating(rating) : colorForRating(rating).opacity(0.2))
+                        .frame(width: 42, height: 42)
+                    
+                    Image(systemName: rating.iconName)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(isSelected ? .white : colorForRating(rating))
                 }
+                .scaleEffect(isSelected ? 1.1 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+                
+                // 텍스트 라벨
+                Text(rating.label)
+                    .font(.caption2)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundStyle(isSelected ? colorForRating(rating) : ZenColors.secondaryText)
             }
-            .frame(width: 52, height: 52)
+            .frame(width: 56, height: 64)
         }
-        .zenButton(isSelected: isSelected, selectionColor: colorForRating(rating))
+        .buttonStyle(.plain)
     }
     
     private func performCheckin() {

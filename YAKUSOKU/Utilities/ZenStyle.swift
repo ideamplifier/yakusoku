@@ -12,10 +12,10 @@ enum ZenColors {
     static let secondaryGreen = Color(hex: "81C784")  // 연한 그린
     static let tertiaryGreen = Color(hex: "C8E6C9")  // 아주 연한 그린
     
-    // 평가 색상
-    static let goodColor = Color(hex: "66BB6A")  // 성공 그린
-    static let mehColor = Color(hex: "FFB74D")  // 보통 오렌지
-    static let poorColor = Color(hex: "EF5350")  // 실패 레드
+    // 평가 색상 (더 선명하게)
+    static let goodColor = Color(hex: "4CAF50")  // 성공 그린 (더 진하게)
+    static let mehColor = Color(hex: "FFA726")  // 보통 오렌지 (더 선명하게)
+    static let poorColor = Color(hex: "F44336")  // 실패 레드 (더 선명하게)
     
     // 텍스트 색상
     static let primaryText = Color(hex: "2E3D27")
