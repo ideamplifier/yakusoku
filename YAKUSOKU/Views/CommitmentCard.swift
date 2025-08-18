@@ -99,9 +99,10 @@ struct CheckinButton: View {
             HapticFeedback.light()
         } label: {
             VStack(spacing: 4) {
-                Text(rating.emoji)
-                    .font(.title2)
-                    .scaleEffect(isSelected ? 1.1 : 1.0)
+                // 플랫 디자인 이모지 사용
+                FluentEmoji(rating: rating, size: 28)
+                    .scaleEffect(isSelected ? 1.15 : 1.0)
+                    .opacity(isSelected ? 1.0 : 0.7)
                 
                 if isSelected {
                     Circle()
@@ -109,7 +110,7 @@ struct CheckinButton: View {
                         .frame(width: 5, height: 5)
                 }
             }
-            .frame(width: 48, height: 48)
+            .frame(width: 52, height: 52)
         }
         .zenButton(isSelected: isSelected, selectionColor: colorForRating(rating))
     }
