@@ -11,13 +11,8 @@ import SwiftData
 @main
 struct YAKUSOKUApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try SharedContainer.container()
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -25,7 +20,7 @@ struct YAKUSOKUApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            HomeView()
         }
         .modelContainer(sharedModelContainer)
     }
