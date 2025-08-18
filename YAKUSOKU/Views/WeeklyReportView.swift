@@ -150,41 +150,7 @@ struct WeekSelector: View {
             }
             .disabled(selectedWeek <= 0)
         }
-        .padding(20)
-        .background(
-            ZStack {
-                Color.white
-                LinearGradient(
-                    colors: [
-                        Color.white,
-                        ZenColors.tertiaryGreen.opacity(0.05)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            ZenColors.primaryGreen.opacity(0.1),
-                            Color.clear
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
-        .shadow(
-            color: ZenColors.primaryGreen.opacity(0.08),
-            radius: 20,
-            x: 0,
-            y: 10
-        )
+        .zenCard()
     }
 }
 
@@ -229,41 +195,7 @@ struct OverallScoreCard: View {
                 .tint(ZenColors.primaryGreen)
                 .scaleEffect(y: 2)
         }
-        .padding(20)
-        .background(
-            ZStack {
-                Color.white
-                LinearGradient(
-                    colors: [
-                        Color.white,
-                        ZenColors.tertiaryGreen.opacity(0.05)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            ZenColors.primaryGreen.opacity(0.1),
-                            Color.clear
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
-        .shadow(
-            color: ZenColors.primaryGreen.opacity(0.08),
-            radius: 20,
-            x: 0,
-            y: 10
-        )
+        .zenCard()
     }
 }
 

@@ -30,6 +30,7 @@ struct ZenCardStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)  // ✅ 카드가 가용 폭을 꽉 채우도록
             .background(
                 ZStack {
                     Color.white
