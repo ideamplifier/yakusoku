@@ -60,22 +60,11 @@ struct FluentEmoji: View {
         // SVG 파일이 제대로 로드되지 않을 경우를 위한 Fallback
         ZStack {
             Circle()
-                .fill(backgroundColorForRating)
+                .fill(Color(hex: "FFE5B4").opacity(0.5))  // 연한 노랑 (피치톤)
                 .frame(width: size, height: size)
             
             faceContent
                 .frame(width: size * 0.7, height: size * 0.7)
-        }
-    }
-    
-    private var backgroundColorForRating: Color {
-        switch rating {
-        case .poor:
-            return ZenColors.poorColor.opacity(0.15)  // 연한 빨강
-        case .meh:
-            return Color(hex: "FFD93D").opacity(0.3)  // 진한 노랑
-        case .good:
-            return ZenColors.goodColor.opacity(0.15)  // 연한 초록
         }
     }
     

@@ -95,9 +95,11 @@ struct ZenButtonStyle: ButtonStyle {
             .background(
                 ZStack {
                     if isSelected {
-                        color.opacity(0.15)
+                        // 선택 시 진한 색상 배경
+                        color.opacity(0.85)
                     } else {
-                        Color.white.opacity(0.8)
+                        // 미선택 시 아주 연한 색상
+                        color.opacity(0.08)
                     }
                 }
             )
@@ -105,14 +107,14 @@ struct ZenButtonStyle: ButtonStyle {
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(
-                        isSelected ? color.opacity(0.4) : Color.gray.opacity(0.1),
-                        lineWidth: 1.5
+                        isSelected ? color : Color.gray.opacity(0.15),
+                        lineWidth: isSelected ? 2 : 1
                     )
             )
             .shadow(
-                color: isSelected ? color.opacity(0.15) : Color.black.opacity(0.05),
-                radius: isSelected ? 8 : 4,
-                y: 2
+                color: isSelected ? color.opacity(0.25) : Color.black.opacity(0.05),
+                radius: isSelected ? 10 : 4,
+                y: isSelected ? 4 : 2
             )
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)

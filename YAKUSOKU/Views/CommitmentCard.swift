@@ -99,16 +99,15 @@ struct CheckinButton: View {
             HapticFeedback.light()
         } label: {
             VStack(spacing: 6) {
-                // 플랫 디자인 이모지 사용 (색상 배경)
+                // 플랫 디자인 이모지 사용 (연한 노랑 통일)
                 FluentEmoji(rating: rating, size: 32)
-                    .scaleEffect(isSelected ? 1.15 : 1.0)
-                    .opacity(isSelected ? 1.0 : 0.6)
+                    .scaleEffect(isSelected ? 1.12 : 1.0)
                 
                 // 텍스트 라벨
                 Text(rating.label)
                     .font(.caption2)
-                    .fontWeight(isSelected ? .semibold : .regular)
-                    .foregroundStyle(isSelected ? colorForRating(rating) : ZenColors.secondaryText)
+                    .fontWeight(isSelected ? .bold : .medium)
+                    .foregroundStyle(isSelected ? .white : colorForRating(rating))
             }
             .frame(width: 56, height: 60)
         }
