@@ -50,22 +50,27 @@ struct SVGWebView: UIViewRepresentable {
 struct FluentEmoji: View {
     let rating: Rating
     let size: CGFloat
+    let isSelected: Bool
     
-    init(rating: Rating, size: CGFloat = 32) {
+    init(rating: Rating, size: CGFloat = 32, isSelected: Bool = false) {
         self.rating = rating
         self.size = size
+        self.isSelected = isSelected
+    }
+    
+    private var emojiColor: Color {
+        switch rating {
+        case .poor: return ZenColors.poorColor      // 빨강
+        case .meh: return ZenColors.mehColor        // 주황
+        case .good: return ZenColors.goodColor      // 초록
+        }
     }
     
     var body: some View {
-        // SVG 파일이 제대로 로드되지 않을 경우를 위한 Fallback
-        ZStack {
-            Circle()
-                .fill(Color(hex: "FFE5B4").opacity(0.5))  // 연한 노랑 (피치톤)
-                .frame(width: size, height: size)
-            
-            faceContent
-                .frame(width: size * 0.7, height: size * 0.7)
-        }
+        // 표정만 표시 (원 제거)
+        faceContent
+            .frame(width: size, height: size)
+            .foregroundStyle(isSelected ? .white : emojiColor.opacity(0.7))
     }
     
     @ViewBuilder
@@ -73,8 +78,8 @@ struct FluentEmoji: View {
         VStack(spacing: size * 0.15) {
             // 눈
             HStack(spacing: size * 0.2) {
-                eye(isLeft: true)
-                eye(isLeft: false)
+                eye(for: rating, isLeft: true)
+                eye(for: rating, isLeft: false)
             }
             
             // 입
@@ -83,23 +88,20 @@ struct FluentEmoji: View {
     }
     
     @ViewBuilder
-    private func eye(isLeft: Bool) -> some View {
+    private func eye(for rating: Rating, isLeft: Bool) -> some View {
         switch rating {
         case .poor:
             // 슬픈 눈 (아래로 기울어진)
             Ellipse()
-                .fill(Color.black)
                 .frame(width: size * 0.08, height: size * 0.12)
                 .rotationEffect(.degrees(isLeft ? -15 : 15))
         case .meh:
             // 평범한 눈
             Circle()
-                .fill(Color.black)
                 .frame(width: size * 0.08, height: size * 0.08)
         case .good:
             // 웃는 눈 (반달 모양)
             Capsule()
-                .fill(Color.black)
                 .frame(width: size * 0.1, height: size * 0.05)
         }
     }
@@ -116,13 +118,12 @@ struct FluentEmoji: View {
                     control: CGPoint(x: size * 0.125, y: 0)
                 )
             }
-            .stroke(Color.black, lineWidth: size * 0.05)
+            .stroke(lineWidth: size * 0.05)
             .frame(width: size * 0.25, height: size * 0.1)
             
         case .meh:
             // 일자 입
             Rectangle()
-                .fill(Color.black)
                 .frame(width: size * 0.2, height: size * 0.03)
             
         case .good:
@@ -134,7 +135,7 @@ struct FluentEmoji: View {
                     control: CGPoint(x: size * 0.125, y: size * 0.1)
                 )
             }
-            .stroke(Color.black, lineWidth: size * 0.05)
+            .stroke(lineWidth: size * 0.05)
             .frame(width: size * 0.25, height: size * 0.1)
         }
     }

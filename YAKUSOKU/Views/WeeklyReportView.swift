@@ -37,10 +37,13 @@ struct WeeklyReportView: View {
                     }
                     
                     InsightCard(stats: weeklyStats)
+                    
+                    Spacer(minLength: 30)
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(ZenColors.background)
             .navigationTitle("주간 리포트")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -48,6 +51,8 @@ struct WeeklyReportView: View {
                     Button("닫기") {
                         dismiss()
                     }
+                    .fontWeight(.semibold)
+                    .foregroundStyle(ZenColors.primaryGreen)
                 }
             }
         }
@@ -114,8 +119,11 @@ struct WeekSelector: View {
         HStack {
             Button {
                 selectedWeek += 1
+                HapticFeedback.light()
             } label: {
-                Image(systemName: "chevron.left")
+                Image(systemName: "chevron.left.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(selectedWeek >= 4 ? ZenColors.tertiaryText : ZenColors.primaryGreen)
             }
             .disabled(selectedWeek >= 4)
             
@@ -124,23 +132,59 @@ struct WeekSelector: View {
             VStack(spacing: 4) {
                 Text(selectedWeek == 0 ? "이번 주" : "\(selectedWeek)주 전")
                     .font(.headline)
+                    .foregroundStyle(ZenColors.primaryText)
                 Text(weekRangeText)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ZenColors.secondaryText)
             }
             
             Spacer()
             
             Button {
                 selectedWeek -= 1
+                HapticFeedback.light()
             } label: {
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.right.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(selectedWeek <= 0 ? ZenColors.tertiaryText : ZenColors.primaryGreen)
             }
             .disabled(selectedWeek <= 0)
         }
-        .padding()
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(20)
+        .background(
+            ZStack {
+                Color.white
+                LinearGradient(
+                    colors: [
+                        Color.white,
+                        ZenColors.tertiaryGreen.opacity(0.05)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            ZenColors.primaryGreen.opacity(0.1),
+                            Color.clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(
+            color: ZenColors.primaryGreen.opacity(0.08),
+            radius: 20,
+            x: 0,
+            y: 10
+        )
     }
 }
 
@@ -148,51 +192,107 @@ struct OverallScoreCard: View {
     let stats: WeeklyStatistics
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("전체 달성률")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("\(Int(stats.successRate * 100))%")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .foregroundStyle(ZenColors.secondaryText)
+                    
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("\(Int(stats.successRate * 100))")
+                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [ZenColors.primaryGreen, ZenColors.secondaryGreen],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                        Text("%")
+                            .font(.title2)
+                            .foregroundStyle(ZenColors.secondaryText)
+                    }
                 }
                 
                 Spacer()
                 
-                HStack(spacing: 16) {
-                    StatBadge(emoji: "🙂", count: stats.goodCount, color: .green)
-                    StatBadge(emoji: "😐", count: stats.mehCount, color: .orange)
-                    StatBadge(emoji: "😣", count: stats.poorCount, color: .red)
+                VStack(spacing: 12) {
+                    StatBadge(rating: .good, count: stats.goodCount)
+                    StatBadge(rating: .meh, count: stats.mehCount)
+                    StatBadge(rating: .poor, count: stats.poorCount)
                 }
             }
             
             ProgressView(value: stats.successRate)
-                .tint(.green)
+                .progressViewStyle(LinearProgressViewStyle())
+                .tint(ZenColors.primaryGreen)
+                .scaleEffect(y: 2)
         }
-        .padding()
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(20)
+        .background(
+            ZStack {
+                Color.white
+                LinearGradient(
+                    colors: [
+                        Color.white,
+                        ZenColors.tertiaryGreen.opacity(0.05)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            ZenColors.primaryGreen.opacity(0.1),
+                            Color.clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(
+            color: ZenColors.primaryGreen.opacity(0.08),
+            radius: 20,
+            x: 0,
+            y: 10
+        )
     }
 }
 
 struct StatBadge: View {
-    let emoji: String
+    let rating: Rating
     let count: Int
-    let color: Color
+    
+    private var color: Color {
+        switch rating {
+        case .good: return ZenColors.goodColor
+        case .meh: return ZenColors.mehColor
+        case .poor: return ZenColors.poorColor
+        }
+    }
     
     var body: some View {
-        VStack(spacing: 4) {
-            Text(emoji)
-                .font(.title2)
+        HStack(spacing: 8) {
+            FluentEmoji(rating: rating, size: 24, isSelected: true)
+                .foregroundStyle(color)
+            
             Text("\(count)")
-                .font(.caption)
+                .font(.subheadline)
                 .fontWeight(.semibold)
+                .foregroundStyle(ZenColors.primaryText)
         }
-        .frame(width: 50, height: 50)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(color.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -206,39 +306,42 @@ struct CommitmentWeeklyCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text(commitment.title)
                 .font(.headline)
+                .foregroundStyle(ZenColors.primaryText)
             
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 ForEach(weekDates, id: \.self) { date in
-                    VStack(spacing: 4) {
+                    VStack(spacing: 8) {
                         Text(date.weekdayString)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(ZenColors.secondaryText)
                         
-                        Circle()
-                            .fill(colorForRating(ratingForDate(date)))
-                            .frame(width: 32, height: 32)
-                            .overlay(
-                                Text(ratingForDate(date)?.emoji ?? "")
-                                    .font(.caption)
-                            )
+                        if let rating = ratingForDate(date) {
+                            FluentEmoji(rating: rating, size: 28, isSelected: true)
+                                .foregroundStyle(colorForRating(rating))
+                                .frame(width: 36, height: 36)
+                                .background(colorForRating(rating).opacity(0.15))
+                                .clipShape(Circle())
+                        } else {
+                            Circle()
+                                .stroke(ZenColors.tertiaryText.opacity(0.2), lineWidth: 2)
+                                .frame(width: 36, height: 36)
+                        }
                     }
                 }
             }
         }
-        .padding()
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .zenCard()
     }
     
-    private func colorForRating(_ rating: Rating?) -> Color {
+    private func colorForRating(_ rating: Rating) -> Color {
         switch rating {
-        case .good: return .green.opacity(0.2)
-        case .meh: return .orange.opacity(0.2)
-        case .poor: return .red.opacity(0.2)
-        case nil: return .secondary.opacity(0.1)
+        case .good: return ZenColors.goodColor
+        case .meh: return ZenColors.mehColor
+        case .poor: return ZenColors.poorColor
         }
     }
 }
@@ -258,19 +361,43 @@ struct InsightCard: View {
         }
     }
     
+    private var insightIcon: String {
+        if stats.totalCheckins == 0 {
+            return "sparkles"
+        } else if stats.successRate >= 0.8 {
+            return "star.fill"
+        } else if stats.successRate >= 0.5 {
+            return "arrow.up.circle.fill"
+        } else {
+            return "lightbulb.fill"
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("이번 주 인사이트", systemImage: "lightbulb.fill")
+            Label("이번 주 인사이트", systemImage: insightIcon)
                 .font(.headline)
+                .foregroundStyle(ZenColors.primaryGreen)
             
             Text(insightText)
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(ZenColors.secondaryText)
+                .lineSpacing(4)
         }
-        .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.blue.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(20)
+        .background(
+            LinearGradient(
+                colors: [ZenColors.primaryGreen.opacity(0.1), ZenColors.secondaryGreen.opacity(0.05)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(ZenColors.primaryGreen.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 

@@ -99,8 +99,8 @@ struct CheckinButton: View {
             HapticFeedback.light()
         } label: {
             VStack(spacing: 6) {
-                // 플랫 디자인 이모지 사용 (연한 노랑 통일)
-                FluentEmoji(rating: rating, size: 32)
+                // 플랫 디자인 이모지 사용 (선택 시 색상 변경)
+                FluentEmoji(rating: rating, size: 32, isSelected: isSelected)
                     .scaleEffect(isSelected ? 1.12 : 1.0)
                 
                 // 텍스트 라벨
