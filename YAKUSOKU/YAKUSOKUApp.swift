@@ -21,6 +21,7 @@ struct YAKUSOKUApp: App {
     var body: some Scene {
         WindowGroup {
             HomeView()
+                .environment(\.yakusokuTheme, MinimalRetroTheme())
         }
         .modelContainer(sharedModelContainer)
     }

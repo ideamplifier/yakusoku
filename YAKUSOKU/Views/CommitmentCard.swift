@@ -4,27 +4,34 @@ import SwiftData
 struct CommitmentCard: View {
     let commitment: Commitment
     @Environment(\.modelContext) private var modelContext
-    @Query private var checkins: [Checkin]
     
-    @State private var todayCheckin: Checkin?
+    // 최적화: 이 commitment의 최근 7일 체크인만 쿼리
+    @Query private var recentCheckins: [Checkin]
+    
     @State private var showingIfThen = false
+    
+    init(commitment: Commitment) {
+        self.commitment = commitment
+        
+        // 최근 7일간의 체크인만 필터링해서 가져오기
+        let commitmentID = commitment.id
+        let sevenDaysAgo = Date.daysAgo(7)
+        
+        _recentCheckins = Query(
+            filter: #Predicate<Checkin> { checkin in
+                checkin.commitmentID == commitmentID && 
+                checkin.date >= sevenDaysAgo
+            },
+            sort: [SortDescriptor(\.date, order: .reverse)]
+        )
+    }
     
     private var todayKey: String {
         Date().yakusokuDayKey
     }
     
     private var todayRating: Rating? {
-        checkins.first { 
-            $0.commitmentID == commitment.id && 
-            $0.dayKey == todayKey 
-        }?.rating
-    }
-    
-    private var recentCheckins: [Checkin] {
-        let sevenDaysAgo = Date.daysAgo(7)
-        return checkins
-            .filter { $0.commitmentID == commitment.id && $0.date >= sevenDaysAgo }
-            .sorted { $0.date > $1.date }
+        recentCheckins.first { $0.dayKey == todayKey }?.rating
     }
     
     var body: some View {
@@ -79,18 +86,22 @@ struct CommitmentCard: View {
     
     private func performCheckin(rating: Rating) {
         let dayKey = Date().yakusokuDayKey
-        
         let commitmentID = commitment.id
-        let descriptor = FetchDescriptor<Checkin>(
+        
+        // 중복 방지: 오늘 이미 체크인이 있는지 확인
+        var descriptor = FetchDescriptor<Checkin>(
             predicate: #Predicate { checkin in
                 checkin.commitmentID == commitmentID && checkin.dayKey == dayKey
             }
         )
+        descriptor.fetchLimit = 1
         
         if let existingCheckin = try? modelContext.fetch(descriptor).first {
+            // 업데이트
             existingCheckin.rating = rating
             existingCheckin.date = Date()
         } else {
+            // 새로 생성
             let newCheckin = Checkin(
                 commitmentID: commitment.id,
                 dayKey: dayKey,

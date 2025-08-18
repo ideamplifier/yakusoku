@@ -35,22 +35,28 @@ struct CheckInIntent: AppIntent {
             
             let rating = Rating(rawValue: ratingRaw) ?? .meh
             
-            let existingCheckinDescriptor = FetchDescriptor<Checkin>(
+            // 중복 방지: fetchLimit 추가로 성능 향상
+            var existingCheckinDescriptor = FetchDescriptor<Checkin>(
                 predicate: #Predicate { checkin in
                     checkin.commitmentID == commitmentID && checkin.dayKey == dayKey
                 }
             )
+            existingCheckinDescriptor.fetchLimit = 1  // 성능 최적화: 첫 번째 결과만 가져오기
             
             if let existingCheckin = try context.fetch(existingCheckinDescriptor).first {
+                // 기존 체크인 업데이트
                 existingCheckin.rating = rating
                 existingCheckin.date = Date()
+                print("Updated existing checkin for \(commitmentID) on \(dayKey)")
             } else {
+                // 새로운 체크인 생성
                 let newCheckin = Checkin(
                     commitmentID: commitmentID,
                     dayKey: dayKey,
                     rating: rating
                 )
                 context.insert(newCheckin)
+                print("Created new checkin for \(commitmentID) on \(dayKey)")
             }
             
             try context.save()

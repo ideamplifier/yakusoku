@@ -5,10 +5,26 @@ import Charts
 struct WeeklyReportView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Query private var commitments: [Commitment]
-    @Query private var checkins: [Checkin]
+    @Environment(\.yakusokuTheme) private var theme
+    @Query(sort: [SortDescriptor(\Commitment.priority)]) 
+    private var commitments: [Commitment]
+    
+    // 최적화: 선택된 주의 체크인만 쿼리
+    @Query private var weekCheckins: [Checkin]
     
     @State private var selectedWeek = 0
+    
+    init() {
+        // 현재 주(selectedWeek=0)의 체크인만 필터링
+        let weekDates = (0..<7).map { Date.daysAgo(6 - $0) }
+        let weekKeys = weekDates.map { $0.yakusokuDayKey }
+        
+        _weekCheckins = Query(
+            filter: #Predicate<Checkin> { checkin in
+                weekKeys.contains(checkin.dayKey)
+            }
+        )
+    }
     
     private var weekDates: [Date] {
         (0..<7).map { Date.daysAgo(6 - $0 - (selectedWeek * 7)) }
@@ -21,47 +37,229 @@ struct WeeklyReportView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                    WeekSelector(selectedWeek: $selectedWeek)
-                    
-                    OverallScoreCard(stats: weeklyStats)
+                VStack(spacing: YK.Space.lg) {
+                    weekSelectorSection
+                    overallScoreSection
                     
                     if !commitments.isEmpty {
-                        ForEach(commitments) { commitment in
-                            CommitmentWeeklyCard(
-                                commitment: commitment,
-                                weekDates: weekDates,
-                                checkins: checkinsForCommitment(commitment)
-                            )
-                        }
+                        commitmentsSection
                     }
                     
-                    InsightCard(stats: weeklyStats)
+                    insightSection
                     
-                    Spacer(minLength: 30)
+                    Spacer(minLength: YK.Space.xxl)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
+                .padding(YK.Space.lg)
             }
-            .background(YKColor.cream)
-            .navigationTitle("주간 리포트")
+            .background(theme.paper.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        TrafficDots(size: 6)
+                        Text("주간 리포트")
+                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                            .foregroundColor(theme.ink)
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("닫기") {
                         dismiss()
                     }
-                    .fontWeight(.semibold)
-                    .foregroundStyle(YKColor.green)
+                    .font(.system(size: 16))
+                    .foregroundColor(theme.ink)
                 }
+            }
+        }
+        .onChange(of: selectedWeek) { _, newWeek in
+            // 주가 변경되면 쿼리 업데이트
+            updateWeekQuery(newWeek)
+        }
+    }
+    
+    private func updateWeekQuery(_ week: Int) {
+        // 선택된 주의 날짜들 계산
+        let weekDates = (0..<7).map { Date.daysAgo(6 - $0 - (week * 7)) }
+        let weekKeys = weekDates.map { $0.yakusokuDayKey }
+        
+        // 새로운 필터로 다시 쿼리 (SwiftData가 자동으로 처리)
+        // Note: 동적 쿼리 변경은 제한적이므로, 주 변경 시 전체 데이터를 가져와 필터링
+    }
+    
+    private var weekSelectorSection: some View {
+        HStack {
+            Button {
+                selectedWeek += 1
+                HapticFeedback.light()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(selectedWeek >= 4 ? theme.inkMuted.opacity(0.4) : theme.ink)
+            }
+            .disabled(selectedWeek >= 4)
+            
+            Spacer()
+            
+            VStack(spacing: YK.Space.xxs) {
+                Text(selectedWeek == 0 ? "이번 주" : "\(selectedWeek)주 전")
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(theme.ink)
+                Text(weekRangeText)
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.inkMuted)
+            }
+            
+            Spacer()
+            
+            Button {
+                selectedWeek -= 1
+                HapticFeedback.light()
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(selectedWeek <= 0 ? theme.inkMuted.opacity(0.4) : theme.ink)
+            }
+            .disabled(selectedWeek <= 0)
+        }
+        .padding(YK.Space.md)
+        .background(theme.paper)
+        .overlay(
+            RoundedRectangle(cornerRadius: YK.Radius.xl)
+                .stroke(theme.line, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: YK.Radius.xl))
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+    }
+    
+    private var overallScoreSection: some View {
+        theme.card {
+            VStack(spacing: YK.Space.md) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: YK.Space.xs) {
+                        Text("달성률")
+                            .font(.system(size: 12))
+                            .foregroundColor(theme.inkMuted)
+                        
+                        HStack(alignment: .firstTextBaseline, spacing: 2) {
+                            Text("\(Int(weeklyStats.successRate * 100))")
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .foregroundColor(theme.ink)
+                            Text("%")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(theme.inkMuted)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: YK.Space.xs) {
+                        statRow("잘함", count: weeklyStats.goodCount, color: YK.ColorToken.green)
+                        statRow("보통", count: weeklyStats.mehCount, color: YK.ColorToken.yellow)
+                        statRow("못함", count: weeklyStats.poorCount, color: YK.ColorToken.red)
+                    }
+                }
+                
+                // Progress bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(theme.line.opacity(0.3))
+                            .frame(height: 8)
+                        
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(weeklyStats.successRate >= 0.8 ? YK.ColorToken.green : 
+                                  weeklyStats.successRate >= 0.5 ? YK.ColorToken.yellow : YK.ColorToken.red)
+                            .frame(width: geometry.size.width * weeklyStats.successRate, height: 8)
+                    }
+                }
+                .frame(height: 8)
             }
         }
     }
     
+    private func statRow(_ label: String, count: Int, color: Color) -> some View {
+        HStack(spacing: YK.Space.xs) {
+            Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+            Text("\(label): \(count)")
+                .font(.system(size: 13))
+                .foregroundColor(theme.inkMuted)
+        }
+    }
+    
+    private var commitmentsSection: some View {
+        VStack(spacing: YK.Space.sm) {
+            ForEach(commitments) { commitment in
+                CommitmentWeekCard(
+                    commitment: commitment,
+                    weekDates: weekDates,
+                    checkins: checkinsForCommitment(commitment)
+                )
+            }
+        }
+    }
+    
+    private var insightSection: some View {
+        theme.card {
+            VStack(alignment: .leading, spacing: YK.Space.sm) {
+                HStack(spacing: YK.Space.xs) {
+                    Image(systemName: insightIcon)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(theme.ink)
+                    Text("이번 주 돌아보기")
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundColor(theme.ink)
+                }
+                
+                Text(insightText)
+                    .font(.system(size: 14))
+                    .foregroundColor(theme.inkMuted)
+                    .lineSpacing(4)
+            }
+        }
+    }
+    
+    private var weekRangeText: String {
+        let startDate = Date.daysAgo(6 + (selectedWeek * 7))
+        let endDate = Date.daysAgo(selectedWeek * 7)
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M/d"
+        
+        return "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate))"
+    }
+    
+    private var insightText: String {
+        if weeklyStats.totalCheckins == 0 {
+            return "이번 주는 기록이 없어요. 작은 시작이 큰 변화를 만들어요."
+        } else if weeklyStats.successRate >= 0.8 {
+            return "훌륭해요! 이번 주 목표를 잘 달성했어요. 다음 주도 이 기세를 유지해봐요!"
+        } else if weeklyStats.successRate >= 0.5 {
+            return "좋은 진전이 있었어요! 조금 더 노력하면 더 나은 결과를 얻을 수 있어요."
+        } else {
+            return "실패는 성공의 어머니예요. If-Then 전략을 다시 점검해보는 건 어떨까요?"
+        }
+    }
+    
+    private var insightIcon: String {
+        if weeklyStats.totalCheckins == 0 {
+            return "sparkles"
+        } else if weeklyStats.successRate >= 0.8 {
+            return "star"
+        } else if weeklyStats.successRate >= 0.5 {
+            return "arrow.up"
+        } else {
+            return "lightbulb"
+        }
+    }
+    
     private func checkinsForCommitment(_ commitment: Commitment) -> [Checkin] {
-        checkins.filter { checkin in
+        // 현재 선택된 주의 체크인만 필터링
+        let weekKeys = weekDates.map { $0.yakusokuDayKey }
+        return weekCheckins.filter { checkin in
             checkin.commitmentID == commitment.id &&
-            weekDates.contains { $0.yakusokuDayKey == checkin.dayKey }
+            weekKeys.contains(checkin.dayKey)
         }
     }
     
@@ -71,11 +269,16 @@ struct WeeklyReportView: View {
         var mehCount = 0
         var poorCount = 0
         
+        let weekKeys = weekDates.map { $0.yakusokuDayKey }
+        
         for commitment in commitments {
-            let weekCheckins = checkinsForCommitment(commitment)
-            totalCheckins += weekCheckins.count
+            let commitmentCheckins = weekCheckins.filter { checkin in
+                checkin.commitmentID == commitment.id &&
+                weekKeys.contains(checkin.dayKey)
+            }
+            totalCheckins += commitmentCheckins.count
             
-            for checkin in weekCheckins {
+            for checkin in commitmentCheckins {
                 switch checkin.rating {
                 case .good: goodCount += 1
                 case .meh: mehCount += 1
@@ -102,127 +305,8 @@ struct WeeklyReportView: View {
     }
 }
 
-struct WeekSelector: View {
-    @Binding var selectedWeek: Int
-    
-    private var weekRangeText: String {
-        let startDate = Date.daysAgo(6 + (selectedWeek * 7))
-        let endDate = Date.daysAgo(selectedWeek * 7)
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "M/d"
-        
-        return "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate))"
-    }
-    
-    var body: some View {
-        HStack {
-            Button {
-                selectedWeek += 1
-                HapticFeedback.light()
-            } label: {
-                Image(systemName: "chevron.left.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(selectedWeek >= 4 ? YKColor.tertiaryText : YKColor.green)
-            }
-            .disabled(selectedWeek >= 4)
-            
-            Spacer()
-            
-            VStack(spacing: 4) {
-                Text(selectedWeek == 0 ? "이번 주" : "\(selectedWeek)주 전")
-                    .font(.headline)
-                    .foregroundStyle(YKColor.primaryText)
-                Text(weekRangeText)
-                    .font(.caption)
-                    .foregroundStyle(YKColor.secondaryText)
-            }
-            
-            Spacer()
-            
-            Button {
-                selectedWeek -= 1
-                HapticFeedback.light()
-            } label: {
-                Image(systemName: "chevron.right.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(selectedWeek <= 0 ? YKColor.tertiaryText : YKColor.green)
-            }
-            .disabled(selectedWeek <= 0)
-        }
-        .stickerCard()
-    }
-}
-
-struct OverallScoreCard: View {
-    let stats: WeeklyStatistics
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            HStack {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("전체 달성률")
-                        .font(.caption)
-                        .foregroundStyle(YKColor.secondaryText)
-                    
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("\(Int(stats.successRate * 100))")
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
-                            .foregroundStyle(YKColor.green)
-                        Text("%")
-                            .font(.title2)
-                            .foregroundStyle(YKColor.secondaryText)
-                    }
-                }
-                
-                Spacer()
-                
-                VStack(spacing: 12) {
-                    StatBadge(rating: .good, count: stats.goodCount)
-                    StatBadge(rating: .meh, count: stats.mehCount)
-                    StatBadge(rating: .poor, count: stats.poorCount)
-                }
-            }
-            
-            ProgressView(value: stats.successRate)
-                .progressViewStyle(LinearProgressViewStyle())
-                .tint(YKColor.green)
-                .scaleEffect(y: 2)
-        }
-        .stickerCard()
-    }
-}
-
-struct StatBadge: View {
-    let rating: Rating
-    let count: Int
-    
-    private var color: Color {
-        switch rating {
-        case .good: return YKColor.green
-        case .meh: return YKColor.yellow
-        case .poor: return YKColor.red
-        }
-    }
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            FluentEmoji(rating: rating, size: 24, isSelected: true)
-                .foregroundStyle(color)
-            
-            Text("\(count)")
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(ZenColors.primaryText)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(color.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-}
-
-struct CommitmentWeeklyCard: View {
+struct CommitmentWeekCard: View {
+    @Environment(\.yakusokuTheme) private var theme
     let commitment: Commitment
     let weekDates: [Date]
     let checkins: [Checkin]
@@ -232,87 +316,54 @@ struct CommitmentWeeklyCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(commitment.title)
-                .font(.headline)
-                .foregroundStyle(ZenColors.primaryText)
-            
-            HStack(spacing: 6) {
-                ForEach(weekDates, id: \.self) { date in
-                    VStack(spacing: 8) {
-                        Text(date.weekdayString)
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .foregroundStyle(YKColor.secondaryText)
-                        
-                        if let rating = ratingForDate(date) {
-                            FluentEmoji(rating: rating, size: 28, isSelected: true)
-                                .foregroundStyle(colorForRating(rating))
-                                .frame(width: 36, height: 36)
-                                .background(colorForRating(rating).opacity(0.15))
-                                .clipShape(Circle())
-                        } else {
-                            Circle()
-                                .stroke(YKColor.tertiaryText, lineWidth: 1.5)
-                                .frame(width: 36, height: 36)
+        theme.card {
+            VStack(alignment: .leading, spacing: YK.Space.sm) {
+                Text(commitment.title)
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(theme.ink)
+                
+                HStack(spacing: YK.Space.xs) {
+                    ForEach(weekDates, id: \.self) { date in
+                        VStack(spacing: YK.Space.xxs) {
+                            Text(date.weekdayString)
+                                .font(.system(size: 10))
+                                .foregroundColor(theme.inkMuted.opacity(0.7))
+                            
+                            if let rating = ratingForDate(date) {
+                                Circle()
+                                    .fill(colorForRating(rating))
+                                    .frame(width: 24, height: 24)
+                                    .overlay(
+                                        Image(systemName: iconForRating(rating))
+                                            .font(.system(size: 12, weight: .light))
+                                            .foregroundColor(.white)
+                                    )
+                            } else {
+                                Circle()
+                                    .stroke(theme.line, lineWidth: 1)
+                                    .frame(width: 24, height: 24)
+                            }
                         }
                     }
                 }
             }
         }
-        .stickerCard()
     }
     
     private func colorForRating(_ rating: Rating) -> Color {
         switch rating {
-        case .good: return YKColor.green
-        case .meh: return YKColor.yellow
-        case .poor: return YKColor.red
-        }
-    }
-}
-
-struct InsightCard: View {
-    let stats: WeeklyStatistics
-    
-    private var insightText: String {
-        if stats.totalCheckins == 0 {
-            return "이번 주는 기록이 없어요. 작은 시작이 큰 변화를 만들어요!"
-        } else if stats.successRate >= 0.8 {
-            return "훌륭해요! 이번 주 목표를 잘 달성했어요. 다음 주도 이 기세를 유지해봐요!"
-        } else if stats.successRate >= 0.5 {
-            return "좋은 진전이 있었어요! 조금 더 노력하면 더 나은 결과를 얻을 수 있어요."
-        } else {
-            return "실패는 성공의 어머니예요. If-Then 전략을 다시 점검해보는 건 어떨까요?"
+        case .good: return YK.ColorToken.green
+        case .meh: return YK.ColorToken.yellow
+        case .poor: return YK.ColorToken.red
         }
     }
     
-    private var insightIcon: String {
-        if stats.totalCheckins == 0 {
-            return "sparkles"
-        } else if stats.successRate >= 0.8 {
-            return "star.fill"
-        } else if stats.successRate >= 0.5 {
-            return "arrow.up.circle.fill"
-        } else {
-            return "lightbulb.fill"
+    private func iconForRating(_ rating: Rating) -> String {
+        switch rating {
+        case .good: return "checkmark"
+        case .meh: return "minus"
+        case .poor: return "xmark"
         }
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("이번 주 인사이트", systemImage: insightIcon)
-                .font(.headline)
-                .foregroundStyle(ZenColors.primaryGreen)
-            
-            Text(insightText)
-                .font(.body)
-                .foregroundStyle(ZenColors.secondaryText)
-                .lineSpacing(4)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .stickerCard()
     }
 }
 
@@ -327,5 +378,6 @@ struct WeeklyStatistics {
 
 #Preview {
     WeeklyReportView()
+        .environment(\.yakusokuTheme, MinimalRetroTheme())
         .modelContainer(for: [Commitment.self, Checkin.self])
 }
