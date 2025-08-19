@@ -10,16 +10,28 @@ struct HomeView: View {
     // 오늘 체크인만 쿼리 (성능 최적화)
     @Query private var todayCheckins: [Checkin]
     
+    // 이번 주 체크인 쿼리
+    @Query private var weekCheckins: [Checkin]
+    
     @State private var showingAddCommitment = false
     @State private var showingWeeklyReport = false
     @State private var showingSettings = false
     @State private var selectedTab = 0
+    @State private var selectedCommitment: Commitment?
     
     init() {
         let todayKey = Date().yakusokuDayKey
         _todayCheckins = Query(
             filter: #Predicate<Checkin> { checkin in
                 checkin.dayKey == todayKey
+            }
+        )
+        
+        // 이번 주 체크인 쿼리
+        let sevenDaysAgo = Date.daysAgo(7)
+        _weekCheckins = Query(
+            filter: #Predicate<Checkin> { checkin in
+                checkin.date >= sevenDaysAgo
             }
         )
     }
@@ -31,12 +43,30 @@ struct HomeView: View {
         return formatter.string(from: Date())
     }
     
-    private var todayProgress: (completed: Int, total: Int, successRate: Double) {
-        let completed = todayCheckins.count
-        let total = commitments.count
-        let goodCount = todayCheckins.filter { $0.rating == .good }.count
-        let successRate = completed > 0 ? Double(goodCount) / Double(completed) : 0
-        return (completed, total, successRate)
+    private var weekScore: Int {
+        if commitments.isEmpty { return 0 }
+        
+        // 체크인 점수 계산
+        var totalScore = 0.0
+        var checkinCount = 0
+        
+        for checkin in weekCheckins {
+            checkinCount += 1
+            switch checkin.rating {
+            case .good: 
+                totalScore += 100
+            case .meh: 
+                totalScore += 50
+            case .poor: 
+                totalScore += 20
+            }
+        }
+        
+        // 실제 체크인한 약속 개수로 나누기
+        if checkinCount == 0 { return 0 }
+        
+        // 체크인한 것들의 평균 점수
+        return Int(totalScore / Double(checkinCount))
     }
     
     var body: some View {
@@ -62,7 +92,7 @@ struct HomeView: View {
                             }
                         }
                         .padding(.horizontal, YK.Space.lg)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 100) // 탭바 높이 + 여유 공간
                     }
                 }
                 
@@ -83,47 +113,48 @@ struct HomeView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+        .sheet(item: $selectedCommitment) { commitment in
+            CommitmentDetailModalView(commitment: commitment)
+                .presentationDetents([.medium])
+                .presentationCornerRadius(28)
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(Color(hex: "#F9F7F4"))
+        }
     }
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: YK.Space.sm) {
-            HStack {
-                TrafficDots()
-                Spacer()
+        VStack(spacing: YK.Space.md) {
+            ZStack {
+                // 가운데 정렬된 YAKUSOKU
                 Text("YAKUSOKU")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundColor(theme.ink)
                     .tracking(1)
-                Spacer()
-                // 약속 추가 버튼
-                Button(action: {
-                    showingAddCommitment = true
-                    HapticFeedback.light()
-                }) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(theme.ink)
+                
+                // 오른쪽 끝에 + 버튼
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        showingAddCommitment = true
+                        HapticFeedback.light()
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(theme.ink)
+                    }
                 }
             }
             
             Text(todayString)
-                .font(.system(size: 14))
-                .foregroundColor(theme.inkMuted)
-            
-            Text("오늘의 약속")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
                 .foregroundColor(theme.ink)
+                .frame(maxWidth: .infinity)
+                .offset(y: -5)
         }
     }
     
     private var weekProgressCard: some View {
-        theme.card {
-            YKWeekProgress(
-                completed: todayProgress.completed,
-                total: todayProgress.total,
-                successRate: todayProgress.successRate
-            )
-        }
+        YKWeekProgress(weekScore: weekScore)
     }
     
     private var commitmentsSection: some View {
@@ -132,7 +163,11 @@ struct HomeView: View {
                 theme.card {
                     CommitmentRowContent(
                         commitment: commitment,
-                        todayCheckins: todayCheckins
+                        todayCheckins: todayCheckins,
+                        onRowTap: {
+                            selectedCommitment = commitment
+                            HapticFeedback.light()
+                        }
                     )
                 }
             }
@@ -235,12 +270,14 @@ struct CommitmentRowContent: View {
     
     let commitment: Commitment
     let todayCheckins: [Checkin]
+    let onRowTap: () -> Void
     
     @Query private var weekCheckins: [Checkin]
     
-    init(commitment: Commitment, todayCheckins: [Checkin]) {
+    init(commitment: Commitment, todayCheckins: [Checkin], onRowTap: @escaping () -> Void) {
         self.commitment = commitment
         self.todayCheckins = todayCheckins
+        self.onRowTap = onRowTap
         
         // 이번 주 체크인만 쿼리
         let commitmentID = commitment.id
@@ -268,13 +305,13 @@ struct CommitmentRowContent: View {
     
     var body: some View {
         YKCommitmentRow(
-            title: commitment.title,
-            subtitle: commitment.ifThen,
+            commitment: commitment,
             weekDots: weekDots,
             todayRating: todayRating,
             onRatingTap: { rating in
                 performCheckin(rating: rating)
-            }
+            },
+            onRowTap: onRowTap
         )
     }
     
@@ -316,6 +353,68 @@ struct CommitmentRowContent: View {
         case .good: HapticFeedback.success()
         case .meh: HapticFeedback.light()
         case .poor: HapticFeedback.warning()
+        }
+    }
+}
+
+// MARK: - Commitment Detail Modal
+struct CommitmentDetailModalView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.yakusokuTheme) private var theme
+    let commitment: Commitment
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+                .frame(height: 50)
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: YK.Space.lg) {
+                    // Title
+                    Text(commitment.title)
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(theme.ink)
+                    
+                    // Pros
+                    if let pros = commitment.pros, !pros.isEmpty {
+                        VStack(alignment: .leading, spacing: YK.Space.xs) {
+                            Text("장점")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(theme.ink)
+                            Text(pros)
+                                .font(.system(size: 14))
+                                .foregroundColor(theme.inkMuted)
+                        }
+                    }
+                    
+                    // Cons
+                    if let cons = commitment.cons, !cons.isEmpty {
+                        VStack(alignment: .leading, spacing: YK.Space.xs) {
+                            Text("단점")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(theme.ink)
+                            Text(cons)
+                                .font(.system(size: 14))
+                                .foregroundColor(theme.inkMuted)
+                        }
+                    }
+                    
+                    // If-Then
+                    if let ifThen = commitment.ifThen, !ifThen.isEmpty {
+                        VStack(alignment: .leading, spacing: YK.Space.xs) {
+                            Text("실행 계획")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(theme.ink)
+                            Text(ifThen)
+                                .font(.system(size: 14))
+                                .foregroundColor(theme.inkMuted)
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .padding(YK.Space.lg)
+            }
         }
     }
 }

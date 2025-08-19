@@ -92,6 +92,7 @@ struct WeeklyReportMinimalView: View {
         var goodCount = 0
         var mehCount = 0
         var poorCount = 0
+        var totalScore = 0.0
         
         for commitment in commitments {
             let weekCheckins = checkinsForCommitment(commitment)
@@ -99,9 +100,15 @@ struct WeeklyReportMinimalView: View {
             
             for checkin in weekCheckins {
                 switch checkin.rating {
-                case .good: goodCount += 1
-                case .meh: mehCount += 1
-                case .poor: poorCount += 1
+                case .good: 
+                    goodCount += 1
+                    totalScore += 100
+                case .meh: 
+                    mehCount += 1
+                    totalScore += 50
+                case .poor: 
+                    poorCount += 1
+                    totalScore += 20
                 }
             }
         }
@@ -113,13 +120,17 @@ struct WeeklyReportMinimalView: View {
         let successRate = totalCheckins > 0 ?
             Double(goodCount) / Double(totalCheckins) : 0
         
+        // 홈과 동일한 계산 - 실제 체크인한 것들의 평균
+        let weekScore = totalCheckins > 0 ? Int(totalScore / Double(totalCheckins)) : 0
+        
         return WeeklyStatistics(
             totalCheckins: totalCheckins,
             goodCount: goodCount,
             mehCount: mehCount,
             poorCount: poorCount,
             completionRate: completionRate,
-            successRate: successRate
+            successRate: successRate,
+            weekScore: weekScore
         )
     }
 }

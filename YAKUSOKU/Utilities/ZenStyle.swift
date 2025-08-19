@@ -194,25 +194,25 @@ struct HapticFeedback {
     static func light() {
         let impact = UIImpactFeedbackGenerator(style: .light)
         impact.prepare()
-        impact.impactOccurred()
+        impact.impactOccurred(intensity: 0.87)
     }
     
     static func medium() {
-        let impact = UIImpactFeedbackGenerator(style: .medium)
+        let impact = UIImpactFeedbackGenerator(style: .light)
         impact.prepare()
-        impact.impactOccurred()
+        impact.impactOccurred(intensity: 0.87)
     }
     
     static func success() {
-        let notification = UINotificationFeedbackGenerator()
-        notification.prepare()
-        notification.notificationOccurred(.success)
+        let impact = UIImpactFeedbackGenerator(style: .light)
+        impact.prepare()
+        impact.impactOccurred(intensity: 0.87)
     }
     
     static func warning() {
-        let notification = UINotificationFeedbackGenerator()
-        notification.prepare()
-        notification.notificationOccurred(.warning)
+        let impact = UIImpactFeedbackGenerator(style: .light)
+        impact.prepare()
+        impact.impactOccurred(intensity: 0.87)
     }
 }
 

@@ -175,59 +175,97 @@ extension EnvironmentValues {
 // MARK: - Commitment Row Component
 struct YKCommitmentRow: View {
     @Environment(\.yakusokuTheme) var theme
-    let title: String
-    let subtitle: String?
+    let commitment: Commitment
     let weekDots: [Rating?]
     let todayRating: Rating?
     let onRatingTap: (Rating) -> Void
+    let onRowTap: () -> Void
     
     var body: some View {
-        HStack(spacing: YK.Space.md) {
-            VStack(alignment: .leading, spacing: YK.Space.xs) {
-                Text(title)
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundColor(theme.ink)
-                    .lineLimit(1)
-                
-                if let subtitle = subtitle {
-                    Text(subtitle)
-                        .font(.system(size: 12))
-                        .foregroundColor(theme.inkMuted)
+        Button(action: onRowTap) {
+            VStack(spacing: YK.Space.xs) {
+                // Title
+                HStack {
+                    Text(commitment.title)
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundColor(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
                 }
                 
-                // Week dots
-                HStack(spacing: 4) {
-                    ForEach(0..<7) { index in
-                        Circle()
-                            .fill(colorForRating(index < weekDots.count ? weekDots[index] : nil))
-                            .frame(width: 6, height: 6)
+                // 장점/단점 (한 줄씩만)
+                VStack(alignment: .leading, spacing: 2) {
+                    if let pros = commitment.pros, !pros.isEmpty {
+                        HStack {
+                            Text("장점: \(pros)")
+                                .font(.system(size: 12))
+                                .foregroundColor(theme.inkMuted)
+                                .lineLimit(1)
+                            Spacer()
+                        }
+                    }
+                    if let cons = commitment.cons, !cons.isEmpty {
+                        HStack {
+                            Text("단점: \(cons)")
+                                .font(.system(size: 12))
+                                .foregroundColor(theme.inkMuted)
+                                .lineLimit(1)
+                            Spacer()
+                        }
                     }
                 }
-            }
-            
-            Spacer()
-            
-            // Rating selector (3 buttons)
-            HStack(spacing: YK.Space.xs) {
-                ForEach([Rating.poor, Rating.meh, Rating.good], id: \.self) { rating in
-                    Button {
-                        onRatingTap(rating)
-                    } label: {
-                        Circle()
-                            .fill(todayRating == rating ? colorForRating(rating) : Color.clear)
-                            .frame(width: 24, height: 24)
-                            .overlay(
+                
+                // Bottom row: Week dots, rating status, rating buttons
+                HStack {
+                    // Week dots with day labels (일요일부터 시작)
+                    HStack(spacing: 7) {
+                        ForEach(0..<7) { dayIndex in
+                            let actualIndex = getActualIndex(for: dayIndex)
+                            VStack(spacing: 2) {
                                 Circle()
-                                    .stroke(
-                                        todayRating == rating ? colorForRating(rating) : theme.line,
-                                        lineWidth: todayRating == rating ? 2 : 1
+                                    .fill(colorForRating(actualIndex < weekDots.count ? weekDots[actualIndex] : nil))
+                                    .frame(width: 9, height: 9)
+                                
+                                Text(dayLabelFixed(for: dayIndex))
+                                    .font(.system(size: 9))
+                                    .foregroundColor(theme.inkMuted.opacity(0.6))
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // Rating status text
+                    if let rating = todayRating {
+                        Text(ratingText(for: rating))
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundColor(theme.ink.opacity(0.5))
+                    }
+                    
+                    // Rating buttons
+                    HStack(spacing: YK.Space.xs) {
+                        ForEach([Rating.poor, Rating.meh, Rating.good], id: \.self) { rating in
+                            Button {
+                                onRatingTap(rating)
+                            } label: {
+                                Circle()
+                                    .fill(todayRating == rating ? colorForRating(rating) : Color.clear)
+                                    .frame(width: 24, height: 24)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(
+                                                todayRating == rating ? colorForRating(rating) : theme.line,
+                                                lineWidth: todayRating == rating ? 2 : 1
+                                            )
                                     )
-                            )
+                            }
+                        }
                     }
                 }
             }
+            .padding(YK.Space.md)
         }
-        .padding(YK.Space.md)
+        .buttonStyle(PlainButtonStyle())
     }
     
     private func colorForRating(_ rating: Rating?) -> Color {
@@ -238,6 +276,36 @@ struct YKCommitmentRow: View {
         case nil: return YK.ColorToken.line.opacity(0.3)
         }
     }
+    
+    private func ratingText(for rating: Rating) -> String {
+        switch rating {
+        case .good: return "잘함"
+        case .meh: return "보통"
+        case .poor: return "못함"
+        }
+    }
+    
+    private func dayLabelFixed(for index: Int) -> String {
+        let days = ["S", "M", "T", "W", "R", "F", "S"]
+        return days[index]
+    }
+    
+    private func getActualIndex(for dayIndex: Int) -> Int {
+        // dayIndex: 0(일) 1(월) 2(화) 3(수) 4(목) 5(금) 6(토)
+        // weekDots는 6일전부터 오늘까지 저장됨 (인덱스 0이 6일전, 인덱스 6이 오늘)
+        let today = Date()
+        let calendar = Calendar.current
+        let todayWeekday = calendar.component(.weekday, from: today) - 1 // 0(일) ~ 6(토)
+        
+        // 해당 요일이 오늘로부터 며칠 전인지 계산
+        let daysAgo = (todayWeekday - dayIndex + 7) % 7
+        
+        // weekDots 배열의 인덱스 계산 (0=6일전, 6=오늘)
+        if daysAgo <= 6 {
+            return 6 - daysAgo
+        }
+        return -1 // 7일 이상 전은 표시하지 않음
+    }
 }
 
 // HapticFeedback is imported from ZenStyle.swift
@@ -245,35 +313,49 @@ struct YKCommitmentRow: View {
 // MARK: - Week Progress Component
 struct YKWeekProgress: View {
     @Environment(\.yakusokuTheme) var theme
-    let completed: Int
-    let total: Int
-    let successRate: Double
+    let weekScore: Int
     
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: YK.Space.xxs) {
-                Text("이번 주")
+                Text("이번 주 나와의")
                     .font(.system(size: 12))
                     .foregroundColor(theme.inkMuted)
                 
-                HStack(spacing: YK.Space.xs) {
-                    Text("\(completed)/\(total)")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(theme.ink)
-                    
-                    Text("\(Int(successRate * 100))%")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(YK.ColorToken.green)
-                        .padding(.horizontal, YK.Space.xs)
-                        .padding(.vertical, 2)
-                        .background(YK.ColorToken.green.opacity(0.1))
-                        .clipShape(Capsule())
-                }
+                Text("약속 점수")
+                    .font(.system(size: 19, weight: .bold, design: .rounded))
+                    .foregroundColor(theme.ink)
             }
             
             Spacer()
             
-            TrafficDots()
+            // 점수 표시
+            HStack(spacing: 4) {
+                Text("\(weekScore)")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(theme.ink)
+                Text("/ 100")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(theme.inkMuted)
+            }
+        }
+        .padding(YK.Space.md)
+        .background(Color(hex: "#F0F0F0"))
+        .clipShape(RoundedRectangle(cornerRadius: YK.Radius.xl))
+        .overlay(
+            RoundedRectangle(cornerRadius: YK.Radius.xl)
+                .stroke(Color(hex: "#D0D0D0"), lineWidth: 1)
+        )
+    }
+    
+    private func scoreColor(for score: Int) -> Color {
+        switch score {
+        case 80...100:
+            return YK.ColorToken.green
+        case 60..<80:
+            return YK.ColorToken.yellow
+        default:
+            return YK.ColorToken.red
         }
     }
 }

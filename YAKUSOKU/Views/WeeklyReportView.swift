@@ -9,25 +9,36 @@ struct WeeklyReportView: View {
     @Query(sort: [SortDescriptor(\Commitment.priority)]) 
     private var commitments: [Commitment]
     
-    // 최적화: 선택된 주의 체크인만 쿼리
-    @Query private var weekCheckins: [Checkin]
+    // 모든 체크인 가져오기 (선택된 주에 따라 필터링은 나중에)
+    @Query private var allCheckins: [Checkin]
     
     @State private var selectedWeek = 0
     
-    init() {
-        // 현재 주(selectedWeek=0)의 체크인만 필터링
-        let weekDates = (0..<7).map { Date.daysAgo(6 - $0) }
+    private var weekCheckins: [Checkin] {
         let weekKeys = weekDates.map { $0.yakusokuDayKey }
-        
-        _weekCheckins = Query(
-            filter: #Predicate<Checkin> { checkin in
-                weekKeys.contains(checkin.dayKey)
-            }
-        )
+        return allCheckins.filter { checkin in
+            weekKeys.contains(checkin.dayKey)
+        }
     }
     
     private var weekDates: [Date] {
-        (0..<7).map { Date.daysAgo(6 - $0 - (selectedWeek * 7)) }
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // 선택된 주의 시작일 계산
+        guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start else {
+            return []
+        }
+        
+        // selectedWeek만큼 이전 주로 이동
+        guard let targetWeekStart = calendar.date(byAdding: .weekOfYear, value: -selectedWeek, to: currentWeekStart) else {
+            return []
+        }
+        
+        // 해당 주의 7일 생성
+        return (0..<7).compactMap { dayOffset in
+            calendar.date(byAdding: .day, value: dayOffset, to: targetWeekStart)
+        }
     }
     
     private var weeklyStats: WeeklyStatistics {
@@ -136,12 +147,12 @@ struct WeeklyReportView: View {
             VStack(spacing: YK.Space.md) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: YK.Space.xs) {
-                        Text("달성률")
+                        Text("나와의 약속 점수")
                             .font(.system(size: 12))
                             .foregroundColor(theme.inkMuted)
                         
                         HStack(alignment: .firstTextBaseline, spacing: 2) {
-                            Text("\(Int(weeklyStats.successRate * 100))")
+                            Text("\(weeklyStats.weekScore)")
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
                                 .foregroundColor(theme.ink)
                             Text("%")
@@ -167,9 +178,9 @@ struct WeeklyReportView: View {
                             .frame(height: 8)
                         
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(weeklyStats.successRate >= 0.8 ? YK.ColorToken.green : 
-                                  weeklyStats.successRate >= 0.5 ? YK.ColorToken.yellow : YK.ColorToken.red)
-                            .frame(width: geometry.size.width * weeklyStats.successRate, height: 8)
+                            .fill(weeklyStats.weekScore >= 80 ? YK.ColorToken.green : 
+                                  weeklyStats.weekScore >= 60 ? YK.ColorToken.yellow : YK.ColorToken.red)
+                            .frame(width: geometry.size.width * (Double(weeklyStats.weekScore) / 100.0), height: 8)
                     }
                 }
                 .frame(height: 8)
@@ -233,9 +244,9 @@ struct WeeklyReportView: View {
     private var insightText: String {
         if weeklyStats.totalCheckins == 0 {
             return "이번 주는 기록이 없어요. 작은 시작이 큰 변화를 만들어요."
-        } else if weeklyStats.successRate >= 0.8 {
+        } else if weeklyStats.weekScore >= 80 {
             return "훌륭해요! 이번 주 목표를 잘 달성했어요. 다음 주도 이 기세를 유지해봐요!"
-        } else if weeklyStats.successRate >= 0.5 {
+        } else if weeklyStats.weekScore >= 60 {
             return "좋은 진전이 있었어요! 조금 더 노력하면 더 나은 결과를 얻을 수 있어요."
         } else {
             return "실패는 성공의 어머니예요. If-Then 전략을 다시 점검해보는 건 어떨까요?"
@@ -245,9 +256,9 @@ struct WeeklyReportView: View {
     private var insightIcon: String {
         if weeklyStats.totalCheckins == 0 {
             return "sparkles"
-        } else if weeklyStats.successRate >= 0.8 {
+        } else if weeklyStats.weekScore >= 80 {
             return "star"
-        } else if weeklyStats.successRate >= 0.5 {
+        } else if weeklyStats.weekScore >= 60 {
             return "arrow.up"
         } else {
             return "lightbulb"
@@ -294,13 +305,25 @@ struct WeeklyReportView: View {
         let successRate = totalCheckins > 0 ?
             Double(goodCount) / Double(totalCheckins) : 0
         
+        // 점수 계산 (홈과 동일한 로직 - 실제 체크인한 것들의 평균)
+        var totalScore = 0.0
+        for checkin in weekCheckins {
+            switch checkin.rating {
+            case .good: totalScore += 100
+            case .meh: totalScore += 50
+            case .poor: totalScore += 20
+            }
+        }
+        let weekScore = totalCheckins > 0 ? Int(totalScore / Double(totalCheckins)) : 0
+        
         return WeeklyStatistics(
             totalCheckins: totalCheckins,
             goodCount: goodCount,
             mehCount: mehCount,
             poorCount: poorCount,
             completionRate: completionRate,
-            successRate: successRate
+            successRate: successRate,
+            weekScore: weekScore
         )
     }
 }
@@ -374,6 +397,7 @@ struct WeeklyStatistics {
     let poorCount: Int
     let completionRate: Double
     let successRate: Double
+    let weekScore: Int
 }
 
 #Preview {
